@@ -10,6 +10,9 @@
 		17FA41E816B6EB14000BC469 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17FA41E716B6EB14000BC469 /* Foundation.framework */; };
 		17FA41EB16B6EB14000BC469 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 17FA41EA16B6EB14000BC469 /* main.m */; };
 		17FA41EF16B6EB14000BC469 /* CryptingFunction.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 17FA41EE16B6EB14000BC469 /* CryptingFunction.1 */; };
+		17FA41F716B6EB28000BC469 /* CryptingFunctions.m in Sources */ = {isa = PBXBuildFile; fileRef = 17FA41F616B6EB28000BC469 /* CryptingFunctions.m */; };
+		17FA41F916B6EDF3000BC469 /* libcommonCrypto.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 17FA41F816B6EDF3000BC469 /* libcommonCrypto.dylib */; };
+		17FA41FB16B6EDF8000BC469 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 17FA41FA16B6EDF8000BC469 /* Security.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -29,8 +32,12 @@
 		17FA41E316B6EB14000BC469 /* CryptingFunction */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = CryptingFunction; sourceTree = BUILT_PRODUCTS_DIR; };
 		17FA41E716B6EB14000BC469 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		17FA41EA16B6EB14000BC469 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		17FA41ED16B6EB14000BC469 /* CryptingFunction-Prefix.pch */ = {isa = PBXFileReference; path = "CryptingFunction-Prefix.pch"; sourceTree = "<group>"; };
+		17FA41ED16B6EB14000BC469 /* CryptingFunction-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "CryptingFunction-Prefix.pch"; sourceTree = "<group>"; };
 		17FA41EE16B6EB14000BC469 /* CryptingFunction.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = CryptingFunction.1; sourceTree = "<group>"; };
+		17FA41F516B6EB28000BC469 /* CryptingFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CryptingFunctions.h; sourceTree = "<group>"; };
+		17FA41F616B6EB28000BC469 /* CryptingFunctions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CryptingFunctions.m; sourceTree = "<group>"; };
+		17FA41F816B6EDF3000BC469 /* libcommonCrypto.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libcommonCrypto.dylib; path = usr/lib/system/libcommonCrypto.dylib; sourceTree = SDKROOT; };
+		17FA41FA16B6EDF8000BC469 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -38,6 +45,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				17FA41FB16B6EDF8000BC469 /* Security.framework in Frameworks */,
+				17FA41F916B6EDF3000BC469 /* libcommonCrypto.dylib in Frameworks */,
 				17FA41E816B6EB14000BC469 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -65,6 +74,8 @@
 		17FA41E616B6EB14000BC469 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				17FA41FA16B6EDF8000BC469 /* Security.framework */,
+				17FA41F816B6EDF3000BC469 /* libcommonCrypto.dylib */,
 				17FA41E716B6EB14000BC469 /* Foundation.framework */,
 			);
 			name = Frameworks;
@@ -74,6 +85,8 @@
 			isa = PBXGroup;
 			children = (
 				17FA41EA16B6EB14000BC469 /* main.m */,
+				17FA41F516B6EB28000BC469 /* CryptingFunctions.h */,
+				17FA41F616B6EB28000BC469 /* CryptingFunctions.m */,
 				17FA41EE16B6EB14000BC469 /* CryptingFunction.1 */,
 				17FA41EC16B6EB14000BC469 /* Supporting Files */,
 			);
@@ -139,6 +152,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				17FA41EB16B6EB14000BC469 /* main.m in Sources */,
+				17FA41F716B6EB28000BC469 /* CryptingFunctions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -195,6 +209,10 @@
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "CryptingFunction/CryptingFunction-Prefix.pch";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/usr/lib/system\"",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -204,6 +222,10 @@
 			buildSettings = {
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "CryptingFunction/CryptingFunction-Prefix.pch";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SDKROOT)/usr/lib/system\"",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
