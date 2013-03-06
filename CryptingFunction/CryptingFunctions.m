@@ -2,13 +2,14 @@
 //  CryptingFunctions.m
 //
 //  Created by Florian on 25.01.13.
-//  Copyright (c) 2013 Florian Killius. All rights reserved.
+//  Copyright (c) 2013 whateva0x29a. All rights reserved.
 //
 
 #define KEY_IV @"key_iv"
 #define KEY_SALT @"key_salt"
 #define KEY_HMAC @"key_hmac"
 #define KEY_ENCRYPTED_DATA @"key_encrypted_data"
+#define KEY_USER_INFO @"user_info"
 
 // what for is this domain thing?
 #define MY_DOMAIN @"crypting.functions.domain"
@@ -26,58 +27,100 @@
 +(void)saveFileAtPath:(NSString *)path 
                  data:(NSData *)data 
              password:(NSString *)password 
+             userInfo:(NSDictionary *)userInfo 
                 error:(NSError **)error
 {
+    // we should say something here...
+    if( !path || !data || !password )
+        return;
+
+    
     NSData *iv;
     NSData *salt;
     NSError *encryptError = NULL;
     
+    // encrypt Data
     NSData *encryptedData = [CryptingFunctions encryptData:data 
                                                   password:password 
                                                         iv:&iv 
                                                       salt:&salt 
                                                      error:&encryptError];
-    if ( encryptError && error ) {
-        NSMutableDictionary* details = [NSMutableDictionary dictionary];
-        [details setValue:ERROR_WRITING_FILE 
-                   forKey:NSLocalizedDescriptionKey];
-        *error = [NSError errorWithDomain:MY_DOMAIN 
-                                     code:200 
-                                 userInfo:details];
+    // check for error
+    if( encryptError ) 
+    {
+        if( error )
+        {
+            NSMutableDictionary* details = [NSMutableDictionary dictionary];
+            [details setValue:ERROR_WRITING_FILE 
+                       forKey:NSLocalizedDescriptionKey];
+            *error = [NSError errorWithDomain:MY_DOMAIN 
+                                         code:ERROR_CODE_WRITING_FILE 
+                                     userInfo:details];
+        }
+        else 
+        {
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+            NSLog(@"%@", ERROR_WRITING_FILE);
+#endif
+        }
         return;
     }
     
+    // get HMAC for password check
     NSData *key = [CryptingFunctions AESKeyForPassword:password salt:salt];
     NSData *hmac = [CryptingFunctions getHMACData:data key:key];
     
-    NSDictionary *fileData = [NSDictionary dictionaryWithObjectsAndKeys:iv, KEY_IV,
-                              salt, KEY_SALT,
-                              hmac, KEY_HMAC,
-                              encryptedData, KEY_ENCRYPTED_DATA, nil];
+    NSMutableDictionary *fileData = [NSMutableDictionary dictionaryWithObjectsAndKeys:iv, KEY_IV,
+                                     salt, KEY_SALT,
+                                     hmac, KEY_HMAC,
+                                     encryptedData, KEY_ENCRYPTED_DATA,nil];
+    
+    if( userInfo )
+    {
+        [fileData setObject:userInfo forKey:KEY_USER_INFO];
+    }
     
     BOOL success = [fileData writeToFile:path 
                               atomically:NO];
     
-    if ( !success ) {
-        NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_WRITING_FILE 
-                                                            forKey:NSLocalizedDescriptionKey];
-        *error = [NSError errorWithDomain:MY_DOMAIN 
-                                     code:200 
-                                 userInfo:details];
+    if ( !success ) 
+    {
+        if( error )
+        {
+            NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_WRITING_FILE 
+                                                                forKey:NSLocalizedDescriptionKey];
+            *error = [NSError errorWithDomain:MY_DOMAIN 
+                                         code:ERROR_CODE_WRITING_FILE 
+                                     userInfo:details];
+        }
+        else {
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+            NSLog(@"%@", ERROR_WRITING_FILE);
+#endif
+        }
     }
 }
 
 + (NSData *)loadEncryptedFileAtPath:(NSString *)path 
                            password:(NSString *)password 
+                           userInfo:(NSDictionary **)userInfo 
                               error:(NSError **)error
 {
-    if(![[NSFileManager defaultManager] isReadableFileAtPath:path]) {
-        if(error) {
+    if( ![[NSFileManager defaultManager] isReadableFileAtPath:path] ) 
+    {
+        if( error ) 
+        {
             NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_FILE_NOT_FOUND_OR_NOT_READABLE 
                                                                 forKey:NSLocalizedDescriptionKey];
             *error = [NSError errorWithDomain:MY_DOMAIN 
-                                         code:200 
+                                         code:ERROR_CODE_FILE_NOT_FOUND_OR_NOT_READABLE 
                                      userInfo:details];
+        }
+        else 
+        {
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+            NSLog(@"%@", ERROR_FILE_NOT_FOUND_OR_NOT_READABLE);
+#endif
         }
         return nil;
     }
@@ -88,16 +131,29 @@
     NSData *salt = [fileData objectForKey:KEY_SALT];
     NSData *encryptedData = [fileData objectForKey:KEY_ENCRYPTED_DATA];
     NSData *hmac = [fileData objectForKey:KEY_HMAC];
+    NSDictionary *userInfoData = [fileData objectForKey:KEY_USER_INFO];
+    
+    if( userInfo )
+        if( userInfoData )
+            *userInfo = [NSDictionary dictionaryWithDictionary:userInfoData];
     
     NSError *decryptionError = NULL;
     
-    if (!iv || !salt || !encryptedData || !hmac) {
-        if(error) {
+    if( !iv || !salt || !encryptedData || !hmac ) 
+    {
+        if( error ) 
+        {
             NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_CORRUPTED_FILE_FORMAT 
                                                                 forKey:NSLocalizedDescriptionKey];
             *error = [NSError errorWithDomain:MY_DOMAIN 
-                                         code:200 
+                                         code:ERROR_CODE_CORRUPTED_FILE_FORMAT 
                                      userInfo:details];
+        }
+        else 
+        {
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+            NSLog(@"%@", ERROR_CORRUPTED_FILE_FORMAT);
+#endif
         }
         return nil;
     }
@@ -108,29 +164,45 @@
                                                       salt:salt
                                                      error:&decryptionError];
     
-    if(decryptionError) {
-        if (error) {
-            NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_DECRYPTING 
-                                                                forKey:NSLocalizedDescriptionKey];
-            *error = [NSError errorWithDomain:MY_DOMAIN 
-                                         code:200 
-                                     userInfo:details];
-        }
-        return nil;
-    }
-    
     NSData *key = [CryptingFunctions AESKeyForPassword:password 
                                                   salt:salt];
     NSData *newHmac = [CryptingFunctions getHMACData:decryptedData 
                                                  key:key];
     
-    if (![newHmac isEqualToData:hmac]){
-        if(error) {
+    if ( ![newHmac isEqualToData:hmac] )
+    {
+        if( error ) 
+        {
             NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_WRONG_PASSWORD 
                                                                 forKey:NSLocalizedDescriptionKey];
             *error = [NSError errorWithDomain:MY_DOMAIN 
-                                         code:200 
+                                         code:ERROR_CODE_WRONG_PASSWORD 
                                      userInfo:details];
+        }
+        else 
+        {
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+            NSLog(@"%@", ERROR_WRONG_PASSWORD);
+#endif
+        }
+        return nil;
+    }
+    
+    if( decryptionError ) 
+    {
+        if ( error ) 
+        {
+            NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_DECRYPTING 
+                                                                forKey:NSLocalizedDescriptionKey];
+            *error = [NSError errorWithDomain:MY_DOMAIN 
+                                         code:ERROR_CODE_DECRYPTING 
+                                     userInfo:details];
+        }
+        else 
+        {
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+            NSLog(@"%@", ERROR_DECRYPTING);
+#endif
         }
         return nil;
     }
@@ -152,54 +224,70 @@
     const NSUInteger kPBKDFSaltSize = 8;
     
     
-    if(!iv) {
-        NSLog(@"IV must not be NULL");
-        if (error) {
+    if( !iv ) 
+    {
+        if( error ) 
+        {
             NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_ENCRYPTING 
                                                                 forKey:NSLocalizedDescriptionKey];
             *error = [NSError errorWithDomain:MY_DOMAIN 
                                          code:200 
                                      userInfo:details];
         }
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+        NSLog(@"IV must not be NULL");
+#endif
         return nil;
     }
-    if(!salt) {
-        NSLog(@"salt must not be NULL");
-        if (error) {
+    if( !salt ) 
+    {
+        if( error ) 
+        {
             NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_ENCRYPTING 
                                                                 forKey:NSLocalizedDescriptionKey];
             *error = [NSError errorWithDomain:MY_DOMAIN 
                                          code:200 
                                      userInfo:details];
         }
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+        NSLog(@"salt must not be NULL");
+#endif
         return nil;
     }
     *iv = [self randomDataOfLength:kAlgorithmIVSize];
     *salt = [self randomDataOfLength:kPBKDFSaltSize];
     
-    if(!(*iv) || !(*salt)) {
-        NSLog(@"Could not generate random bytes");
-        if (error) {
+    if(!(*iv) || !(*salt)) 
+    {
+        if( error ) 
+        {
             NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_ENCRYPTING 
                                                                 forKey:NSLocalizedDescriptionKey];
             *error = [NSError errorWithDomain:MY_DOMAIN 
                                          code:200 
                                      userInfo:details];
         }
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+        NSLog(@"Could not generate random bytes");
+#endif
         return nil;
     }
     
     NSData *key = [self AESKeyForPassword:password salt:*salt];
     
-    if( !key ) {
-        NSLog(@"Could not create key for password and salt");
-        if (error) {
+    if( !key ) 
+    {
+        if( error ) 
+        {
             NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_ENCRYPTING 
                                                                 forKey:NSLocalizedDescriptionKey];
             *error = [NSError errorWithDomain:MY_DOMAIN 
                                          code:200 
                                      userInfo:details];
         }
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+        NSLog(@"Could not create key for password and salt");
+#endif
         return nil;
     }
     
@@ -219,16 +307,25 @@
                                      cipherData.length, // dataOutAvailable
                                      &outLength); // dataOutMoved
     
-    if (result == kCCSuccess) {
+    if( result == kCCSuccess ) 
+    {
         cipherData.length = outLength;
     }
-    else {
-        if (error) {
+    else 
+    {
+        if( error ) 
+        {
             NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_ENCRYPTING 
                                                                 forKey:NSLocalizedDescriptionKey];
             *error = [NSError errorWithDomain:MY_DOMAIN 
-                                         code:200 
+                                         code:ERROR_CODE_ENCRYPTING 
                                      userInfo:details];
+        }
+        else 
+        {
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+            NSLog(@"%@", ERROR_ENCRYPTING);
+#endif
         }
         return nil;
     }
@@ -242,8 +339,11 @@
     
     int result = SecRandomCopyBytes(kSecRandomDefault, length, data.mutableBytes);
     
-    if(result == -1) {
+    if( result == -1 ) 
+    {
+#ifdef DEBUG_CRYPTING_FUNCTIONS
         NSLog(@"%@: %d", ERROR_COULD_NOT_CREATE_RANDOM_BYTES, errno);
+#endif
         return nil;
     }
     
@@ -269,8 +369,11 @@
                                   derivedKey.mutableBytes, // derivedKey
                                   derivedKey.length); // derivedKeyLen
     
-    if(result != kCCSuccess) {
+    if( result != kCCSuccess ) 
+    {
+#ifdef DEBUG_CRYPTING_FUNCTIONS
         NSLog(@"Unable to create AES key for password: %d", result);
+#endif
         return nil;
     }
     return derivedKey;
@@ -306,17 +409,25 @@
                                      outputData.length, // dataOutAvailable
                                      &outLength); // dataOutMoved
     
-    if (result == kCCSuccess) {
+    if( result == kCCSuccess ) 
+    {
         outputData.length = outLength;
     }
-    else {
-        NSLog(@"could not decrypt string.");
-        if (error) {
+    else 
+    {
+        if ( error ) 
+        {
             NSDictionary* details = [NSDictionary dictionaryWithObject:ERROR_DECRYPTING 
                                                                 forKey:NSLocalizedDescriptionKey];
             *error = [NSError errorWithDomain:MY_DOMAIN 
-                                         code:200 
+                                         code:ERROR_CODE_DECRYPTING 
                                      userInfo:details];
+        }
+        else 
+        {
+#ifdef DEBUG_CRYPTING_FUNCTIONS
+            NSLog(@"%@", ERROR_DECRYPTING);
+#endif
         }
         return nil;
     }

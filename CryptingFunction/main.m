@@ -31,6 +31,8 @@ int main(int argc, const char * argv[])
         [CryptingFunctions saveFileAtPath:path 
                                      data:data 
                                  password:password 
+                                 userInfo:[NSDictionary dictionaryWithObjectsAndKeys:@"test.crypting", @"filename",
+                                           @"textfile",@"filetype", nil]
                                     error:&error];
         
         if(error)
@@ -39,12 +41,14 @@ int main(int argc, const char * argv[])
         NSLog(@"\nfile saved. content: %@", my_secret_message);
         
         
+        NSDictionary *userInfo = NULL;
         
         // LOAD FILE
         error = NULL;
         
         NSData *newData = [CryptingFunctions loadEncryptedFileAtPath:path 
                                                             password:password 
+                                                            userInfo:&userInfo
                                                                error:&error];
         
         if(error)
@@ -58,6 +62,7 @@ int main(int argc, const char * argv[])
         } 
         
         NSLog(@"\nfile loaded. content: %@", [[NSString alloc] initWithData:newData encoding:NSUTF8StringEncoding]);
+        NSLog(@"userInfo: %@", userInfo);
         
     }
     return 0;
